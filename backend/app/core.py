@@ -76,8 +76,13 @@ def evaluate(actuals, forecasts, decision_date, hour=11):
 
 async def fetch_dataset(dataset, start, end, client=None):
     if dataset not in ('FUELHH','WINDFOR'): raise ValueError('Unsupported dataset')
+    # FUELHH filters by settlement date, not the from/to timestamps used by other APIs.
+    # The interval end is exclusive; subtract a microsecond to keep the same settlement day.
     params=({'publishDateTimeFrom':iso(start),'publishDateTimeTo':iso(end)}
-            if dataset=='WINDFOR' else {'from':iso(start),'to':iso(end)})
+            if dataset=='WINDFOR' else {
+                'settlementDateFrom':start.astimezone(UK).date().isoformat(),
+                'settlementDateTo':(end - timedelta(microseconds=1)).astimezone(UK).date().isoformat()
+            })
     async def call(session):
         response=await session.get(f'{BASE}/{dataset}/stream',params=params)
         response.raise_for_status()
