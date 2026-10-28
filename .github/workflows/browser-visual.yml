@@ -26,7 +26,10 @@ jobs:
         id: baseline
         shell: bash
         run: |
-          if find tests -path '*-snapshots/*.png' -print -quit | grep -q .; then
+          if [ -f ../.github/visual-baseline-refresh.request ]; then
+            echo "bootstrap=true" >> "$GITHUB_OUTPUT"
+            echo "Approved one-time visual baseline refresh requested"
+          elif find tests -path '*-snapshots/*.png' -print -quit | grep -q .; then
             echo "bootstrap=false" >> "$GITHUB_OUTPUT"
           else
             echo "bootstrap=true" >> "$GITHUB_OUTPUT"
@@ -41,7 +44,10 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add tests/*-snapshots/*.png
-          git commit -m 'test: add deterministic Chromium screenshot baselines [skip ci]'
+          if [ -f ../.github/visual-baseline-refresh.request ]; then
+            git -C .. rm -f .github/visual-baseline-refresh.request
+          fi
+          git commit -m 'test: approve corrected Chromium visual baselines [skip ci]'
           git push
       - name: Compare browser screenshots with committed baseline and test live site
         run: npx playwright test

@@ -60,3 +60,11 @@ GitHub Actions rebuilds and tests the application on push. External Elexon and d
 ## AI tools disclosure
 
 OpenAI ChatGPT helped write the architecture, code, tests, documentation and deployment. A human should independently review the code and claims. Elexon BMRS data attribution and licence terms apply.
+
+## Browser visual regression
+
+The [Chromium browser workflow](https://github.com/codebyArya-bit/GridBox-Assignment/actions/workflows/browser-visual.yml) tests the public Vercel site at a **1440px desktop** and **390px mobile** viewport using Playwright. Tests inspect both live Elexon data and deterministic fixtures; screenshot baselines capture dashboard and upstream-failure rendering while fixture-driven tests verify chart paths, interval tables, navigation controls, missing data, viewport overflow, and console errors.
+
+Screenshots are stored in `e2e/tests/dashboard.spec.ts-snapshots/`. Regular CI compares against checked-in baseline files without automatically updating them. A deliberate one-time baseline refresh can be requested using the `.github/visual-baseline-refresh.request` marker, which the workflow removes after saving the reviewed new screenshots. HTML Playwright reports and live-production screenshots are attached to each browser workflow run.
+
+Run locally: `cd e2e && npm install && npx playwright install chromium && npm test`.

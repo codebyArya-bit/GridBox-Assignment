@@ -69,7 +69,7 @@ test('visual: deterministic dashboard and wind-generation charts', async ({ page
     fullPage: true,
     animations: 'disabled',
     caret: 'hide',
-    maxDiffPixelRatio: 0.012
+    maxDiffPixelRatio: 0.003
   });
   const dimensions = await page.evaluate(() => ({
     viewport: window.innerWidth,
@@ -95,7 +95,7 @@ test('visual: upstream error is shown without fabricated metrics', async ({ page
   await expect(page.locator('tbody tr')).toHaveCount(0);
   await stableScreenshot(page);
   await expect(page).toHaveScreenshot('upstream-error.png', {
-    fullPage: true, animations: 'disabled', caret: 'hide', maxDiffPixelRatio: 0.012
+    fullPage: true, animations: 'disabled', caret: 'hide', maxDiffPixelRatio: 0.003
   });
 });
 

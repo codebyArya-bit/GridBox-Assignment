@@ -6,6 +6,7 @@ import './style.css';
 type Point={startTime:string;forecastMW:number|null;actualMW:number|null;errorMW:number|null;publishedAt:string|null};
 type Analysis={decisionDate:string;deliveryDate:string;decisionCutoff:string;cutoffAssumption:string;expectedIntervals:number;forecastIntervals:number;actualIntervals:number;matchedIntervals:number;maeMW:number|null;rmseMW:number|null;biasMW:number|null;series:Point[];dataSource:string};
 const API=import.meta.env.VITE_API_URL||'';
+const mobileViewport=typeof window!=='undefined' && window.innerWidth<=700;
 const pretty=(n:number|null|undefined)=>n==null?'—':n.toLocaleString('en-GB',{maximumFractionDigits:2});
 const local=(iso:string)=>new Date(iso).toLocaleString('en-GB',{timeZone:'Europe/London',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
 const hhmm=(iso:string)=>new Date(iso).toLocaleTimeString('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit'});
@@ -48,11 +49,11 @@ function App(){
           <div className="card"><span>MATCHED INTERVALS</span><b>{data.matchedIntervals} <small>/ {data.expectedIntervals}</small></b><em>{data.forecastIntervals} forecast / {data.actualIntervals} actual</em></div>
         </section>
         <section className="panel"><div className="panelhead"><div><div className="eyebrow">01 / WIND GENERATION</div><h2>Forecast versus actual generation</h2><p>Half-hourly actuals and recorded hourly forecasts (line joins observed forecast points only)</p></div><span className="pill">Delivery {data.deliveryDate}</span></div>
-          <div className="chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={points}><defs><linearGradient id="fade" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#24b891" stopOpacity={0.18}/><stop offset="100%" stopColor="#24b891" stopOpacity={0}/></linearGradient></defs><CartesianGrid stroke="#e9eef0" vertical={false}/><XAxis dataKey="time" interval={5} tick={{fontSize:11}}/><YAxis tick={{fontSize:11}}/><Tooltip/><Legend/><Area dataKey="forecastMW" name="Forecast MW" stroke="#10a98a" fill="url(#fade)" strokeWidth={2} connectNulls={true} dot={{r:2}}/><Area dataKey="actualMW" name="Actual MW" stroke="#526eb2" fill="transparent" strokeWidth={2} connectNulls={false}/></AreaChart></ResponsiveContainer></div>
+          <div className="chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={points}><defs><linearGradient id="fade" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#24b891" stopOpacity={0.18}/><stop offset="100%" stopColor="#24b891" stopOpacity={0}/></linearGradient></defs><CartesianGrid stroke="#e9eef0" vertical={false}/><XAxis dataKey="time" interval={mobileViewport?11:5} tick={{fontSize:11}}/><YAxis tick={{fontSize:11}}/><Tooltip/><Legend/><Area dataKey="forecastMW" name="Forecast MW" stroke="#10a98a" fill="url(#fade)" strokeWidth={2} connectNulls={true} dot={{r:2}}/><Area dataKey="actualMW" name="Actual MW" stroke="#526eb2" fill="transparent" strokeWidth={2} connectNulls={false}/></AreaChart></ResponsiveContainer></div>
         </section>
         <div className="twocol">
           <section id="accuracy" className="panel"><div className="eyebrow">02 / QUANTIFIED ACCURACY</div><h2>Interval error</h2><p>Forecast minus actual (MW)</p>
-          <div className="chart short"><ResponsiveContainer width="100%" height="100%"><BarChart data={points}><CartesianGrid stroke="#e9eef0" vertical={false}/><XAxis dataKey="time" interval={7} tick={{fontSize:10}}/><YAxis tick={{fontSize:10}}/><Tooltip/><ReferenceLine y={0} stroke="#81949f"/><Bar dataKey="errorMW" name="Signed error MW" fill="#468eb5"/></BarChart></ResponsiveContainer></div>
+          <div className="chart short"><ResponsiveContainer width="100%" height="100%"><BarChart data={points}><CartesianGrid stroke="#e9eef0" vertical={false}/><XAxis dataKey="time" interval={mobileViewport?11:7} tick={{fontSize:10}}/><YAxis tick={{fontSize:10}}/><Tooltip/><ReferenceLine y={0} stroke="#81949f"/><Bar dataKey="errorMW" name="Signed error MW" fill="#468eb5"/></BarChart></ResponsiveContainer></div>
           </section>
           <section className="panel"><div className="eyebrow">03 / AS-OF DECISION</div><h2>What was knowable?</h2><p>Forecast revisions after the selected decision time are excluded.</p>
           <div className="detail"><span>Decision cutoff</span><strong>{local(data.decisionCutoff)} UK</strong></div>
@@ -63,7 +64,7 @@ function App(){
           </section>
         </div>
         <section id="intervals" className="panel"><div className="eyebrow">04 / FULL AUDIT TRAIL</div><h2>Half-hourly evidence</h2><p>Exact UTC timestamps and forecast publication times for review</p>
-          <div className="tablewrap"><table><thead><tr><th>TARGET UTC</th><th>FORECAST MW</th><th>ACTUAL MW</th><th>ERROR MW</th><th>PUBLISHED UTC</th></tr></thead>
+          <p className="mobilehint">Swipe the table sideways to see all columns.</p><div className="tablewrap"><table><thead><tr><th>TARGET UTC</th><th>FORECAST MW</th><th>ACTUAL MW</th><th>ERROR MW</th><th>PUBLISHED UTC</th></tr></thead>
           <tbody>{data.series.map(r=><tr key={r.startTime}><td>{r.startTime}</td><td>{pretty(r.forecastMW)}</td><td>{pretty(r.actualMW)}</td><td>{pretty(r.errorMW)}</td><td>{r.publishedAt||'—'}</td></tr>)}</tbody></table></div>
         </section>
       </>}
