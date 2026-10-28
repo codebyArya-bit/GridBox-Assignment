@@ -1,0 +1,29 @@
+name: January coverage and browser audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/scripts/audit_january.py'
+      - 'e2e/tests/january-audit.spec.ts'
+      - '.github/workflows/january-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  january:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install httpx
+      - run: python backend/scripts/audit_january.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: january-data-quality-audit
+          path: audit-results.json
+          if-no-files-found: warn
+          retention-days: 14
