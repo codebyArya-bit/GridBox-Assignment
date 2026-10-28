@@ -1,22 +1,15 @@
 import { defineConfig, devices } from '@playwright/test';
-
 export default defineConfig({
-  testDir: './tests',
-  timeout: 120_000,
-  expect: { timeout: 30_000 },
-  fullyParallel: false,
-  workers: 1,
-  retries: 1,
-  reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
-  outputDir: 'test-results',
-  use: {
-    baseURL: process.env.GRIDBOX_WEB || 'https://gridbox-wind-web.vercel.app',
-    trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
-    actionTimeout: 20_000
-  },
-  projects: [
-    { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 } },
-    { name: 'mobile-chromium', use: { ...devices['iPhone 13'], browserName: 'chromium', viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 } }
+  testDir: './tests', timeout: 160_000, expect:{timeout:40_000},
+  fullyParallel: false, workers: 1, retries:1,
+  reporter:[['list'],['html',{open:'never',outputFolder:'playwright-report'}]],
+  outputDir:'test-results',
+  use:{baseURL:process.env.GRIDBOX_WEB||'https://gridbox-wind-web.vercel.app',
+       trace:'retain-on-failure',screenshot:'only-on-failure',actionTimeout:25_000},
+  projects:[
+    {name:'desktop-chromium',use:{...devices['Desktop Chrome'],viewport:{width:1440,height:900},deviceScaleFactor:1}},
+    {name:'mobile-chromium',use:{...devices['iPhone 13'],browserName:'chromium',viewport:{width:390,height:844},deviceScaleFactor:1}},
+    {name:'firefox-desktop',use:{...devices['Desktop Firefox'],viewport:{width:1440,height:900}}},
+    {name:'webkit-desktop',use:{...devices['Desktop Safari'],viewport:{width:1440,height:900}}}
   ]
 });

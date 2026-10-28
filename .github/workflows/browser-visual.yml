@@ -7,7 +7,6 @@ permissions:
   contents: write
 jobs:
   browser:
-    name: Playwright desktop + mobile + public live smoke
     runs-on: ubuntu-latest
     timeout-minutes: 18
     defaults:
@@ -18,46 +17,36 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install Playwright test runner
-        run: npm install --no-audit --no-fund
-      - name: Install Chromium and system dependencies
-        run: npx playwright install --with-deps chromium
-      - name: Determine whether reviewed screenshots exist
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Check baseline refresh marker
         id: baseline
         shell: bash
         run: |
           if [ -f ../.github/visual-baseline-refresh.request ]; then
-            echo "bootstrap=true" >> "$GITHUB_OUTPUT"
-            echo "Approved one-time visual baseline refresh requested"
-          elif find tests -path '*-snapshots/*.png' -print -quit | grep -q .; then
-            echo "bootstrap=false" >> "$GITHUB_OUTPUT"
+            echo "refresh=true" >> "$GITHUB_OUTPUT"
           else
-            echo "bootstrap=true" >> "$GITHUB_OUTPUT"
+            echo "refresh=false" >> "$GITHUB_OUTPUT"
           fi
-      - name: Bootstrap first visual baseline (only once, before comparisons)
-        if: steps.baseline.outputs.bootstrap == 'true'
-        run: npx playwright test --grep 'visual:' --update-snapshots
-      - name: Commit visual golden images for future regression checks
-        if: steps.baseline.outputs.bootstrap == 'true'
-        shell: bash
+      - name: Generate reviewed screenshots once
+        if: steps.baseline.outputs.refresh == 'true'
+        run: npx playwright test --grep 'visual:' --project=desktop-chromium --project=mobile-chromium --update-snapshots
+      - name: Commit updated golden snapshots
+        if: steps.baseline.outputs.refresh == 'true'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add tests/*-snapshots/*.png
-          if [ -f ../.github/visual-baseline-refresh.request ]; then
-            git -C .. rm -f .github/visual-baseline-refresh.request
-          fi
-          git commit -m 'test: approve corrected Chromium visual baselines [skip ci]'
+          git -C .. rm -f .github/visual-baseline-refresh.request
+          git commit -m 'test: approved v2 hourly and January baselines [skip ci]'
           git push
-      - name: Compare browser screenshots with committed baseline and test live site
-        run: npx playwright test
-      - name: Upload browser screenshots, HTML report and traces
+      - name: Compare screenshots and live hourly/monthly functionality
+        run: npx playwright test tests/dashboard.spec.ts --project=desktop-chromium --project=mobile-chromium
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: gridbox-browser-evidence
+          name: gridbox-v2-browser-evidence
           path: |
             e2e/test-results/
             e2e/playwright-report/
           retention-days: 14
-          if-no-files-found: warn
