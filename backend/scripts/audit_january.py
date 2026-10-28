@@ -10,7 +10,10 @@ from pathlib import Path
 import httpx
 
 WEB = os.environ.get("GRIDBOX_WEB", "https://gridbox-wind-web.vercel.app")
-DATES = [("2026-01-01",11),("2026-01-15",8),("2026-01-15",11),("2026-01-15",17),("2026-01-31",11)]
+# Cover all 31 purchasing dates as well as alternative cutoff hours.
+DATES = [(f"2026-01-{day:02d}",11) for day in range(1,32)] + [
+    ("2026-01-15",8),("2026-01-15",17)
+]
 
 def verify(payload, decision_date, cutoff_hour):
     assert payload["decisionDate"] == decision_date
@@ -76,6 +79,12 @@ async def main():
     by_hour={r["cutoffHourUK"]:r for r in results if r["decisionDate"]=="2026-01-15"}
     assert by_hour[8]["forecastIntervals"] <= by_hour[11]["forecastIntervals"] <= by_hour[17]["forecastIntervals"]
     Path("audit-results.json").write_text(json.dumps(results,indent=2)+"\n",encoding="utf-8")
+    assert len(results)==33
+    days_at_11=[r for r in results if r["cutoffHourUK"]==11]
+    assert len({r["decisionDate"] for r in days_at_11})==31
+    print("ALL 31 JANUARY DATES AUDITED",len(days_at_11))
+    print("FORECAST COVERAGE DISTRIBUTION",dict(Counter(r["forecastIntervals"] for r in days_at_11)))
+    print("MATCHED INTERVAL DISTRIBUTION",dict(Counter(r["matchedIntervals"] for r in days_at_11)))
     print("DATE BOUNDARIES AND CUTOFF AUDIT PASSED")
 
 if __name__=="__main__":
