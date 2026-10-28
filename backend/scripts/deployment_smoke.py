@@ -32,9 +32,9 @@ async def main():
         print("Analysis:",{k:v for k,v in payload.items() if k!="series"})
         assert payload["decisionDate"]=="2026-01-15"
         assert payload["deliveryDate"]=="2026-01-16"
-        assert payload["expectedIntervals"]==48
+        assert payload["expectedIntervals"]==24
         assert payload["forecastIntervals"]>0,"No historical forecasts available"
-        assert payload["actualIntervals"]>0,"No actual wind records available"
+        assert payload["observedHalfHourIntervals"]==48,"No actual wind records available"
         assert payload["matchedIntervals"]>0,"Missing matched actual and forecast readings"
         assert all(row["publishedAt"] is None or row["publishedAt"] <= payload["decisionCutoff"] for row in payload["series"])
         print("Public deployment smoke test passed.")
