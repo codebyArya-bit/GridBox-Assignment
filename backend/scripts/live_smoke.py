@@ -1,17 +1,24 @@
-"""Real upstream schema smoke test; runs separately from deterministic CI."""
+"""Inspect actual Elexon API semantics and records, not synthetic fixtures."""
 import asyncio
 from datetime import datetime, timezone
+from collections import Counter
 from app.core import fetch_dataset
 
 async def main():
-    from_time=datetime(2026,1,15,9,tzinfo=timezone.utc)
-    to_time=datetime(2026,1,15,13,tzinfo=timezone.utc)
-    for dataset in ('FUELHH','WINDFOR'):
-        rows=await fetch_dataset(dataset,from_time,to_time)
-        print(f'{dataset}: {len(rows)} rows')
-        if not rows: raise RuntimeError(f'{dataset} returned no rows; check API filters, service status, and historical coverage')
-        print(f'{dataset}: response keys: {sorted(rows[0])}')
-        fields=({'startTime','fuelType','generation'} if dataset=='FUELHH' else {'startTime','publishTime','generation'})
-        if not fields.issubset(rows[0]): raise RuntimeError(f'{dataset} schema mismatch: {fields-rows[0].keys()}')
+    a=datetime(2026,1,16,0,tzinfo=timezone.utc)
+    b=datetime(2026,1,17,0,tzinfo=timezone.utc)
+    c=datetime(2026,1,15,9,tzinfo=timezone.utc)
+    d=datetime(2026,1,15,13,tzinfo=timezone.utc)
+    for dataset,start,end in [('FUELHH',a,b),('WINDFOR',c,d)]:
+        rows=await fetch_dataset(dataset,start,end)
+        print(dataset,'rows=',len(rows))
+        if not rows:raise RuntimeError(dataset+' returned no rows')
+        print('KEYS:',sorted(rows[0]))
+        print('FIRST 3:',rows[:3])
+        print('FUEL COUNTS:',Counter(str(row.get('fuelType')) for row in rows).most_common())
+        print('START MIN MAX:',min(str(x.get('startTime')) for x in rows),max(str(x.get('startTime')) for x in rows))
+        print('PUBLISH MIN MAX:',min(str(x.get('publishTime')) for x in rows),max(str(x.get('publishTime')) for x in rows))
+        required=({'startTime','fuelType','generation'} if dataset=='FUELHH' else {'startTime','publishTime','generation'})
+        assert required.issubset(rows[0]),'Unexpected schema'
 
-if __name__=='__main__': asyncio.run(main())
+asyncio.run(main())
