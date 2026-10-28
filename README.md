@@ -1,54 +1,62 @@
-# GridBox | UK Day-Ahead Wind Intelligence
+# GridBox — Day-Ahead Wind Intelligence
 
-Full-stack pilot for UK electricity utility procurement teams, using React/TypeScript, FastAPI, Elexon BMRS datasets, Docker and GitHub Actions.
+Full-stack React / TypeScript and Python FastAPI analytical pilot for UK electricity purchasing teams.
 
-## Scope and correct decision timing
+**Public app:** https://gridbox-wind-web.vercel.app
+**Public backend:** https://gridbox-wind-api.vercel.app/api/health
+**GitHub Actions:** [CI](https://github.com/codebyArya-bit/GridBox-Assignment/actions/workflows/ci.yml), [live Elexon](https://github.com/codebyArya-bit/GridBox-Assignment/actions/workflows/elexon-live.yml), [public deployment](https://github.com/codebyArya-bit/GridBox-Assignment/actions/workflows/deployment-smoke.yml).
 
-The assignment requests **buying decisions taken January 1–31, 2026**. Each selected decision date maps to next-day delivery (January 2–February 1). Wind actuals come only from Elexon `FUELHH/stream` with `fuelType=WIND`. Forecast revisions come only from Elexon `WINDFOR/stream`.
+## Requirements and methodology
 
-The system reconstructs the latest forecast available at the decision time: per half-hourly target `startTime`, choose the revision with greatest `publishTime` **not later than the cutoff**. The default cutoff is 11:00 Europe/London on the buying date, configurable and clearly an **illustrative assumption, not an asserted market gate closure**.
+- The assignment covers purchasing decisions made **1–31 January 2026**. The simulated purchase decisions relate to wind generation delivered the next day (2 January–1 February).
+- Actuals are from the Elexon BMRS **FUELHH** national 30-minute dataset, filtered for **WIND**.
+- Forecast revisions are from the Elexon BMRS **WINDFOR** historical dataset. Each half-hour interval uses the latest revision whose publishTime is at or before the assumed buying cutoff.
+- Default decision cutoff **11:00 Europe/London** on the buying date is configurable. This is explicitly a **pilot assumption, not a verified market gate closure**.
+- Mean absolute error (MAE), root mean squared error (RMSE), signed bias and matching coverage are calculated only for aligned pairs. Errors are in MW, signed error is forecast minus actual. Missing data stays missing.
+- Demand is outside the assignment dataset scope, so the product **does not calculate total grid shortfall or net procurement amount**.
+- If Elexon is unreachable, the backend reports an upstream error rather than replacing measurements with synthetic values.
 
-Forecast error = forecast minus actual MW. MAE, RMSE and bias are calculated over matched intervals; missing data remains explicitly missing. Forecast count, actual count and matched count are shown. Only Elexon wind datasets are allowed, so no demand quantity or definitive procurement recommendation is calculated.
+## Architecture
 
-## Local execution
+- `frontend/`: responsive React/TypeScript analytics dashboard with interval audit table, charts, cutoff controls and error messaging. Vite for the production build.
+- `frontend/vercel.json`: same-origin `/api` rewrite to the separately deployed backend. SPA fallback.
+- `backend/app/core.py`: UK local/UTC timestamps, actual and forecast retrieval, historical point-in-time selection, metrics.
+- `backend/app/main.py`: HTTP API, request validation, controlled 502 upstream errors.
+- `backend/index.py`: FastAPI serverless entrypoint for Vercel.
+- `backend/tests/`: 11 deterministic tests for calculation, boundaries, valid data, API validation, mocked upstream errors.
+- `backend/scripts/live_smoke.py`: live Elexon dataset contract test on GitHub Actions.
+- `backend/scripts/deployment_smoke.py`: public frontend/backend/API health and real analysis test on GitHub Actions.
+- `docker-compose.yml`: local frontend/backend container orchestration.
+- `DEMO_SCRIPT.md`: required 10-minute customer and technical video outline.
+
+## Local run
 
 ```bash
 docker compose up --build
-# Dashboard http://localhost:5173
-# API http://localhost:8000/docs
+# Frontend http://localhost:5173
+# FastAPI docs http://localhost:8000/docs
 ```
 
-Without Docker: `cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload` and separately `cd frontend && npm install && npm run dev`.
-
-## Repository
-
-- `backend/app/core.py` historical dataset calls, timezone handling, as-of selection, metrics
-- `backend/app/main.py` typed date/hour API, 422/502 errors
-- `backend/index.py` FastAPI entrypoint for a separate Vercel backend project
-- `backend/tests` API and analytical deterministic tests
-- `backend/scripts/live_smoke.py` external Elexon API contract test (separate workflow)
-- `frontend/src` React dashboard, charts and interval audit
-- `frontend/vite.config.ts` local API proxy
-- `docker-compose.yml` container orchestration
-- `.github/workflows/ci.yml` tests both frontend and backend on every push
-- `.github/workflows/elexon-live.yml` separately tests live Elexon connectivity, may fail during upstream outages
-- `DEMO_SCRIPT.md` required video outline
-
-## Verify
+Or start independently:
 
 ```bash
-cd backend && python -m pytest -q
-cd frontend && npm install && npm run build
+cd backend
+python -m pip install -r requirements.txt
+uvicorn app.main:app --reload
+# another terminal:
+cd frontend
+npm install
+npm run dev
 ```
 
-CI results are available in the GitHub Actions tab. The independent live workflow verifies upstream dataset schema. **A passing mocked/unit test alone is not evidence of live Elexon connectivity.**
+Verify locally: `cd backend && python -m pytest -q`; `cd frontend && npm install && npm run build`.
 
-## Deployment
+## Deployment and verification
 
-Recommended Vercel configuration: two projects linked to this Git repository, one with root directory `backend` (FastAPI), one with root directory `frontend` (Vite). Set `VITE_API_URL` to the deployed backend URL for Production and Preview. Do not enter a deploy URL in the application form until `/api/health` and `/api/analysis` are reachable.
+Two Vercel projects share the GitHub repo. The backend project root is `backend`, the frontend project root is `frontend`. The SPA proxies `/api` to the backend using its tracked `frontend/vercel.json` rewrite; no private API token is required.
 
-## Limitations / disclosures
+GitHub Actions rebuilds and tests the application on push. External Elexon and deployed endpoint checks are independent of deterministic unit tests. Review their workflow results before stating production readiness.
 
-Historical rather than live purchasing operations. Actual client decision time is not confirmed. Service interruptions or incomplete Elexon records are displayed as errors or coverage gaps, never replaced by made-up measurements. Data attribution: Elexon BMRS and its data licence terms.
+## AI tools disclosure
 
-OpenAI ChatGPT was used to assist with architecture, coding, tests, UX, documentation and deployment preparation. Independent testing and human review remain essential.
+OpenAI ChatGPT helped write the architecture, code, tests, documentation and deployment. A human should independently review the code and claims. Elexon BMRS data attribution and licence terms apply.
