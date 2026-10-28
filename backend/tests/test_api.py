@@ -39,4 +39,5 @@ def test_request_filter_names():
             await fetch_dataset('FUELHH',start,start,client)
     asyncio.run(run())
     assert 'publishDateTimeFrom=' in urls[0]
-    assert 'publishDateTimeFrom=' not in urls[1] and 'from=' in urls[1]
+    assert 'settlementDateFrom=2026-01-15' in urls[1]
+    assert 'settlementDateTo=2026-01-15' in urls[1]
