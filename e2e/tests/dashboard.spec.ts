@@ -132,6 +132,9 @@ test('production: public browser loads actual wind and forecast readings', async
   await expect.poll(() => page.locator('svg.recharts-surface').count()).toBeGreaterThanOrEqual(2);
   await expect(page.locator('.card')).toHaveCount(4);
   await expect(page.locator('.card').nth(3)).toContainText('24');
+  // Prove the forecast path is rendered in the real deployed chart, not only fixtures.
+  await expect.poll(async () => (await page.locator('.recharts-area-curve').first().getAttribute('d') || '').length)
+    .toBeGreaterThan(40);
   await expect(page.getByRole('alert')).toHaveCount(0);
   const actualCells = await page.locator('tbody tr td:nth-child(3)').allTextContents();
   const matched = actualCells.filter(value => value.trim() !== '—').length;
