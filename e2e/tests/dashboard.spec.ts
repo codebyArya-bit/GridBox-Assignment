@@ -57,6 +57,10 @@ test('visual: deterministic dashboard and wind-generation charts', async ({ page
   await expect(page.locator('.card')).toHaveCount(4);
   await expect(page.locator('tbody tr')).toHaveCount(48);
   await expect.poll(() => page.locator('svg.recharts-surface').count()).toBeGreaterThanOrEqual(2);
+  // The forecast series must have a real visible path despite alternating missing half-hour slots.
+  // Without connectNulls, Recharts drew only isolated 1-point segments and no forecast line.
+  await expect.poll(async () => (await page.locator('.recharts-area-curve').first().getAttribute('d') || '').length)
+    .toBeGreaterThan(40);
   await expect(page.locator('.metrics')).toContainText('150');
   await expect(page.locator('header')).toBeVisible();
   await stableScreenshot(page);
