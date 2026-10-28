@@ -20,6 +20,7 @@ jobs:
       - run: python -m pip install -r requirements.txt
       - run: python -m pytest -q
       - run: python -m compileall -q app
+      - run: python -c 'from index import app; assert app.title == "GridBox Wind Intelligence"'
   frontend:
     runs-on: ubuntu-latest
     defaults:
