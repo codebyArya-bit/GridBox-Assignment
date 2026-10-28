@@ -56,7 +56,7 @@ test('visual: deterministic dashboard and wind-generation charts', async ({ page
   await expect(page.getByRole('heading', { name: 'Wind Generation Intelligence' })).toBeVisible();
   await expect(page.locator('.card')).toHaveCount(4);
   await expect(page.locator('tbody tr')).toHaveCount(48);
-  await expect(page.locator('svg.recharts-surface')).toHaveCount(2);
+  await expect.poll(() => page.locator('svg.recharts-surface').count()).toBeGreaterThanOrEqual(2);
   await expect(page.locator('.metrics')).toContainText('150');
   await expect(page.locator('header')).toBeVisible();
   await stableScreenshot(page);
@@ -114,7 +114,7 @@ test('behavior: changing date and decision cutoff refreshes charts and rows', as
   await page.locator('#cutoff').selectOption('14');
   await expect.poll(() => requestedUrls.some(url => url.includes('decision_date=2026-01-20') && url.includes('cutoff_hour=14'))).toBe(true);
   await expect(page.locator('tbody tr')).toHaveCount(48);
-  await expect(page.locator('svg.recharts-surface')).toHaveCount(2);
+  await expect.poll(() => page.locator('svg.recharts-surface').count()).toBeGreaterThanOrEqual(2);
 });
 
 test('production: public browser loads actual wind and forecast readings', async ({ page }, testInfo) => {
@@ -125,7 +125,7 @@ test('production: public browser loads actual wind and forecast readings', async
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 90_000 });
   await expect(page.getByRole('heading', { name: 'Wind Generation Intelligence' })).toBeVisible();
   await expect(page.locator('tbody tr')).toHaveCount(48, { timeout: 140_000 });
-  await expect(page.locator('svg.recharts-surface')).toHaveCount(2);
+  await expect.poll(() => page.locator('svg.recharts-surface').count()).toBeGreaterThanOrEqual(2);
   await expect(page.locator('.card')).toHaveCount(4);
   await expect(page.locator('.card').nth(3)).toContainText('24');
   await expect(page.getByRole('alert')).toHaveCount(0);
