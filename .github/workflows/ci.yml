@@ -33,3 +33,35 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build both Docker images
+        run: docker compose build
+      - name: Start application stack
+        run: docker compose up -d
+      - name: Validate API health through local Docker
+        run: |
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8000/api/health; then break; fi
+            sleep 3
+          done
+          curl -fsS http://127.0.0.1:8000/api/health | python -c 'import json,sys; assert json.load(sys.stdin)["status"]=="ok"'
+      - name: Validate UI loads through local Docker
+        run: |
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:5173/ > /tmp/gridbox.html; then break; fi
+            sleep 3
+          done
+          grep -q "GridBox" /tmp/gridbox.html
+      - name: Validate Docker frontend proxy to FastAPI
+        run: curl -fsS http://127.0.0.1:5173/api/health | python -c 'import json,sys; assert json.load(sys.stdin)["status"]=="ok"'
+      - name: Container logs if failed
+        if: failure()
+        run: docker compose logs --tail=100
+      - name: Stop stack
+        if: always()
+        run: docker compose down
