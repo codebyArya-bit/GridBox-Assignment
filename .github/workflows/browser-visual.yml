@@ -1,0 +1,57 @@
+name: Browser visual regression (Chromium)
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  browser:
+    name: Playwright desktop + mobile + public live smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright test runner
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Determine whether reviewed screenshots exist
+        id: baseline
+        shell: bash
+        run: |
+          if find tests -path '*-snapshots/*.png' -print -quit | grep -q .; then
+            echo "bootstrap=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "bootstrap=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Bootstrap first visual baseline (only once, before comparisons)
+        if: steps.baseline.outputs.bootstrap == 'true'
+        run: npx playwright test --grep 'visual:' --update-snapshots
+      - name: Commit visual golden images for future regression checks
+        if: steps.baseline.outputs.bootstrap == 'true'
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/*-snapshots/*.png
+          git commit -m 'test: add deterministic Chromium screenshot baselines [skip ci]'
+          git push
+      - name: Compare browser screenshots with committed baseline and test live site
+        run: npx playwright test
+      - name: Upload browser screenshots, HTML report and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gridbox-browser-evidence
+          path: |
+            e2e/test-results/
+            e2e/playwright-report/
+          retention-days: 14
+          if-no-files-found: warn

@@ -1,0 +1,15 @@
+{
+  "name": "gridbox-browser-regression",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:visual": "playwright test --grep visual:",
+    "test:live": "playwright test --grep production:"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@types/node": "^22.0.0"
+  }
+}
